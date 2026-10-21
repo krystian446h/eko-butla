@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlassLoop - Obieg Zamknięty Opakowań Szklanych</title>
+
+  <!-- IKONA APLIKACJI (Biały obrys butelki na czarnym tle) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23000000'/><path d='M230 60 h52 v40 h-52 z M240 100 h32 v40 l40 50 v240 h-112 v-240 l40 -50 z' fill='none' stroke='%23ffffff' stroke-width='16' stroke-linejoin='round' stroke-linecap='round'/><path d='M220 320 h72' fill='none' stroke='%23ffffff' stroke-width='12' stroke-linecap='round'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23000000'/><path d='M230 60 h52 v40 h-52 z M240 100 h32 v40 l40 50 v240 h-112 v-240 l40 -50 z' fill='none' stroke='%23ffffff' stroke-width='16' stroke-linejoin='round' stroke-linecap='round'/><path d='M220 320 h72' fill='none' stroke='%23ffffff' stroke-width='12' stroke-linecap='round'/></svg>">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: background 0.5s ease;
+    }
+
+    /* Gradienty Tła */
+    .theme-default {
+      background: linear-gradient(135deg, #051e18 0%, #0d3b2e 50%, #0f4c3a 100%);
+    }
+    .theme-emerald {
+      background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%);
+    }
+    .theme-ocean {
+      background: linear-gradient(135deg, #032b30 0%, #084c56 50%, #0e7490 100%);
+    }
+    .theme-neon {
+      background: linear-gradient(135deg, #030712 0%, #0f172a 50%, #1e1b4b 100%);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 1.25rem;
+    }
+
+    .glass-card-hover:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(52, 211, 153, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .scanner-laser {
+      background: linear-gradient(180deg, rgba(52, 211, 153, 0) 0%, rgba(52, 211, 153, 0.8) 50%, rgba(52, 211, 153, 0) 100%);
+      animation: scan 2s infinite ease-in-out;
+    }
+
+    @keyframes scan {
+      0% { top: 0%; }
+      50% { top: 85%; }
+      100% { top: 0%; }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(52, 211, 153, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(52, 211, 153, 0.6);
+    }
+  </style>
+</head>
+<body class="theme-default text-gray-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="glass-card sticky top-0 z-40 mx-2 mt-2 px-4 py-3 rounded-2xl flex flex-wrap justify-between items-center gap-4">
+    <div class="flex items-center space-x-3">
+      <!-- Obrys Butelki jako Logo w aplikacji -->
+      <div class="w-10 h-10 rounded-xl bg-black border border-white/30 flex items-center justify-center text-white text-xl p-1">
+        <svg viewBox="0 0 512 512" class="w-full h-full">
+          <path d="M230 60 h52 v40 h-52 z M240 100 h32 v40 l40 50 v240 h-112 v-240 l40 -50 z" fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+          GlassLoop
+        </h1>
+        <p class="text-[10px] text-emerald-200/70 font-medium tracking-wider uppercase">Cyrkularna Gospodarka Szkłem</p>
+      </div>
+    </div>
+
+    <!-- PROFILE STATUS BAR -->
+    <div class="flex items-center space-x-3 bg-black/30 px-3 py-1.5 rounded-full border border-white/10">
+      <div id="userAvatarContainer" class="w-9 h-9 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-lg shadow-inner">
+        🍾
+      </div>
+      <div class="text-xs">
+        <div class="flex items-center space-x-1.5">
+          <span id="displayNick" class="font-bold text-white">EkoUżytkownik</span>
+          <span id="userBadge" class="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-md">
+            Początkujący
+          </span>
+        </div>
+        <div class="flex items-center space-x-3 text-[11px] text-emerald-200 mt-0.5">
+          <span><i class="fa-solid fa-coins text-yellow-400 mr-1"></i><strong id="userPoints">0</strong> pkt</span>
+          <span><i class="fa-solid fa-recycle text-emerald-400 mr-1"></i><span id="userBottles">0</span> szt.</span>
+        </div>
+      </div>
+      <button onclick="openProfileModal()" class="ml-2 text-gray-400 hover:text-white text-xs bg-white/5 hover:bg-white/10 p-2 rounded-full transition">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="container mx-auto max-w-6xl px-3 py-4 flex-1">
+    
+    <!-- NAVIGATION TABS -->
+    <nav class="flex overflow-x-auto space-x-2 pb-3 mb-4 scrollbar-none border-b border-white/10">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-lg">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Pulpit & Wpływ</span>
+      </button>
+      <button onclick="switchTab('scanner')" id="tab-scanner" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent">
+        <i class="fa-solid fa-qrcode text-emerald-400"></i>
+        <span>Skaner Kaucji</span>
+      </button>
+      <button onclick="switchTab('leaderboard')" id="tab-leaderboard" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent">
+        <i class="fa-solid fa-trophy text-yellow-400"></i>
+        <span>Ranking Miasta</span>
+      </button>
+      <button onclick="switchTab('shop')" id="tab-shop" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent">
+        <i class="fa-solid fa-store text-cyan-400"></i>
+        <span>Eko-Sklep</span>
+      </button>
+      <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent">
+        <i class="fa-solid fa-brain text-purple-400"></i>
+        <span>Quiz Edukacyjny</span>
+      </button>
+      <button onclick="switchTab('forum')" id="tab-forum" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 transition bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent">
+        <i class="fa-solid fa-users text-pink-400"></i>
+        <span>Społeczność</span>
+      </button>
+    </nav>
+
+    <!-- TAB CONTENTS -->
+
+    <!-- TAB 1: DASHBOARD -->
+    <div id="view-dashboard" class="space-y-6">
+      
+      <div class="glass-card p-6 border-l-4 border-l-emerald-400 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="max-w-3xl">
+          <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800">
+            Startup: Obieg Zamknięty Opakowań Szklanych
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold mt-3 text-white tracking-tight">
+            Szkło to nie odpad – to wartościowy zasób i zyskowny biznes
+          </h2>
+          <p class="text-sm text-emerald-100/80 mt-2 leading-relaxed">
+            Platforma **GlassLoop** integruje mieszkańców, lokalne punkty skupu, sklepy i hutę szkła w jednym cyfrowym ekosystemie. Zmniejszamy koszty wywozu odpadów w mieście, obniżamy zużycie energii o **30%** przy przetopie i nagradzamy punkty ekologiczne użytkownikom.
+          </p>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="glass-card p-4 flex flex-col justify-between">
+          <div class="text-emerald-400 text-2xl mb-2"><i class="fa-solid fa-wine-bottle"></i></div>
+          <div>
+            <div class="text-2xl font-black text-white" id="statTotalBottles">14,280</div>
+            <div class="text-xs text-gray-400 font-medium">Butelek w obiegu (Miasto)</div>
+          </div>
+          <div class="text-[10px] text-emerald-400 mt-2 font-semibold">▲ +18% w tym miesiącu</div>
+        </div>
+        <div class="glass-card p-4 flex flex-col justify-between">
+          <div class="text-cyan-400 text-2xl mb-2"><i class="fa-solid fa-leaf"></i></div>
+          <div>
+            <div class="text-2xl font-black text-white" id="statCo2Saved">4.28 ton</div>
+            <div class="text-xs text-gray-400 font-medium">Zredukowanego CO2</div>
+          </div>
+          <div class="text-[10px] text-cyan-400 mt-2 font-semibold">Równowartość 192 drzew</div>
+        </div>
+        <div class="glass-card p-4 flex flex-col justify-between">
+          <div class="text-yellow-400 text-2xl mb-2"><i class="fa-solid fa-bolt"></i></div>
+          <div>
+            <div class="text-2xl font-black text-white" id="statEnergySaved">11.4 MWh</div>
+            <div class="text-xs text-gray-400 font-medium">Zaooszczędzonej energii</div>
+          </div>
+          <div class="text-[10px] text-yellow-400 mt-2 font-semibold">Oszczędność w przetopie</div>
+        </div>
+      </div>
+
+      <!-- CHARTS SECTION -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card p-5">
+          <h3 class="text-sm font-bold text-gray-200 mb-4 flex items-center justify-between">
+            <span><i class="fa-solid fa-chart-area text-emerald-400 mr-2"></i>Wskaźnik Obiegu Szklanego (Miesiące)</span>
+            <span class="text-xs text-gray-400 font-normal">Sztuki w tys.</span>
+          </h3>
+          <div class="h-64">
+            <canvas id="recycledChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card p-5">
+          <h3 class="text-sm font-bold text-gray-200 mb-4 flex items-center">
+            <i class="fa-solid fa-pie-chart text-teal-400 mr-2"></i>Struktura Opakowań Szklanych
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="typesChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUSINESS MODEL -->
+      <div class="glass-card p-6">
+        <h3 class="text-base font-bold text-white mb-4 flex items-center">
+          <i class="fa-solid fa-briefcase text-emerald-400 mr-2.5"></i>Jak GlassLoop Generuje Zysk i Chroni Środowisko?
+        </h3>
+        <div class="grid sm:grid-cols-3 gap-4 text-xs">
+          <div class="bg-black/20 p-4 rounded-xl border border-white/5 space-y-2">
+            <div class="font-bold text-emerald-300 text-sm flex items-center">
+              <span class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center mr-2 text-xs">1</span>
+              Smart Skanowanie
+            </div>
+            <p class="text-gray-300 leading-relaxed">
+              Mieszkańcy skanują kody QR/EAN na opakowaniach. Aplikacja natychmiast przyznaje pkt oraz lokalizuje najbliższy Inteligentny Punkt Zwrotu.
+            </p>
+          </div>
+          <div class="bg-black/20 p-4 rounded-xl border border-white/5 space-y-2">
+            <div class="font-bold text-teal-300 text-sm flex items-center">
+              <span class="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center mr-2 text-xs">2</span>
+              Optymalizacja Logistyki
+            </div>
+            <p class="text-gray-300 leading-relaxed">
+              Partnerzy biznesowi otrzymują dane w czasie rzeczywistym o zapełnieniu punktów, optymalizując trasy odbioru szkła i redukując ślad węglowy.
+            </p>
+          </div>
+          <div class="bg-black/20 p-4 rounded-xl border border-white/5 space-y-2">
+            <div class="font-bold text-cyan-300 text-sm flex items-center">
+              <span class="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center mr-2 text-xs">3</span>
+              Monetyzacja & Ekosystem
+            </div>
+            <p class="text-gray-300 leading-relaxed">
+              Monetyzujemy usługę poprzez opłaty środowiskowe B2B, prowizję od odzyskanego surowca i partnerstwa ze sklepami w module Eko-Sklepu na pkt.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: SCANNER -->
+    <div id="view-scanner" class="hidden space-y-6">
+      <div class="max-w-md mx-auto glass-card p-6 text-center relative overflow-hidden">
+        <h2 class="text-xl font-bold text-white mb-1">Skaner Butelki Szklanej</h2>
+        <p class="text-xs text-gray-300 mb-6">Zeskanuj kod EAN lub QR znajdujący się na szklanym opakowaniu, aby otrzymać punkty.</p>
+
+        <div class="relative w-full h-64 bg-black/60 rounded-2xl border-2 border-dashed border-emerald-500/50 flex flex-col items-center justify-center overflow-hidden mb-6 shadow-2xl">
+          <div class="scanner-laser absolute w-full h-8 left-0 z-10 pointer-events-none"></div>
+
+          <div class="w-48 h-48 border-2 border-emerald-400/80 rounded-xl flex items-center justify-center relative bg-emerald-950/20">
+            <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-400"></div>
+            <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-emerald-400"></div>
+            <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-emerald-400"></div>
+            <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-emerald-400"></div>
+            
+            <i class="fa-solid fa-barcode text-5xl text-emerald-400/40 animate-pulse"></i>
+          </div>
+
+          <div class="absolute bottom-3 text-[11px] text-emerald-300 font-medium bg-black/60 px-3 py-1 rounded-full border border-white/10">
+            <i class="fa-solid fa-camera mr-1"></i> Kamera aktywna (Symulacja)
+          </div>
+        </div>
+
+        <button onclick="simulateScan()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 font-bold rounded-xl text-white shadow-lg shadow-emerald-900/40 transition active:scale-95 flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-expand"></i>
+          <span>Zeskanuj Przykładową Butelkę</span>
+        </button>
+
+        <p class="text-[11px] text-gray-400 mt-3">
+          Każda zeskanowana szklana butelka dodaje <strong>+50 pkt</strong>!
+        </p>
+      </div>
+
+      <div class="glass-card p-5 max-w-2xl mx-auto">
+        <h3 class="text-sm font-bold text-gray-200 mb-3 flex items-center">
+          <i class="fa-solid fa-clock-rotate-left text-emerald-400 mr-2"></i>Ostatnio Zeskanowane Opakowania
+        </h3>
+        <div id="scanHistory" class="space-y-2 text-xs"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: LEADERBOARD -->
+    <div id="view-leaderboard" class="hidden space-y-6">
+      <div class="glass-card p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fa-solid fa-trophy text-yellow-400 mr-2.5"></i>Lokalny Ranking Recyklingu
+            </h2>
+            <p class="text-xs text-gray-300 mt-1">
+              Ranking prawdziwych użytkowników w Twoim mieście.
+            </p>
+          </div>
+          <div class="bg-black/30 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-emerald-300">
+            Liczba zarejestrowanych osób: <strong id="totalUsersCount">0</strong>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-white/10 text-gray-400 font-semibold uppercase tracking-wider">
+                <th class="pb-3 px-3">Pozycja</th>
+                <th class="pb-3 px-3">Użytkownik</th>
+                <th class="pb-3 px-3">Ranga</th>
+                <th class="pb-3 px-3 text-right">Zeskanowane</th>
+                <th class="pb-3 px-3 text-right">Punkty</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTable" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="glass-card p-5">
+        <h3 class="text-sm font-bold text-white mb-3 flex items-center">
+          <i class="fa-solid fa-award text-emerald-400 mr-2"></i>Dostępne Rangi w Ekosystemie
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="bg-black/20 p-3 rounded-xl border border-white/5">
+            <span class="text-xs px-2 py-0.5 bg-gray-500/20 text-gray-300 border border-gray-500/30 rounded font-semibold">Eko-Początkujący</span>
+            <div class="text-[11px] text-gray-400 mt-2">0 - 200 pkt</div>
+          </div>
+          <div class="bg-black/20 p-3 rounded-xl border border-white/5">
+            <span class="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-semibold">Pogromca Butelek</span>
+            <div class="text-[11px] text-gray-400 mt-2">201 - 500 pkt</div>
+          </div>
+          <div class="bg-black/20 p-3 rounded-xl border border-white/5">
+            <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded font-semibold">Mistrz Recyklingu</span>
+            <div class="text-[11px] text-gray-400 mt-2">501 - 1200 pkt</div>
+          </div>
+          <div class="bg-black/20 p-3 rounded-xl border border-white/5">
+            <span class="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-semibold">Eko-Legenda Miasta</span>
+            <div class="text-[11px] text-gray-400 mt-2">1201+ pkt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SHOP -->
+    <div id="view-shop" class="hidden space-y-6">
+      <div class="glass-card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fa-solid fa-store text-cyan-400 mr-2.5"></i>Eko-Sklep Nagród & Motywów
+            </h2>
+            <p class="text-xs text-gray-300 mt-1">Wymieniaj zgromadzone punkty za skanowanie i quizy na atrakcyjne dodatki!</p>
+          </div>
+          <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-2 rounded-xl text-xs font-bold flex items-center">
+            <i class="fa-solid fa-coins mr-2"></i> Twoje saldo: <span id="shopBalance" class="ml-1 text-sm text-white">0</span> pkt
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">🌊</span>
+                <span class="text-xs font-extrabold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-1 rounded-lg">Motyw</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Motyw "Morski Turkus"</h3>
+              <p class="text-xs text-gray-300 mt-1">Zmień kolorystykę aplikacji na głęboki gradient morskiego oceanu.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>150 pkt</span>
+              <button onclick="buyItem('theme-ocean', 150, 'theme')" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition">Odblokuj</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">🌌</span>
+                <span class="text-xs font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-lg">Motyw</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Motyw "Neonowy Cień"</h3>
+              <p class="text-xs text-gray-300 mt-1">Elegancki, ciemno-fioletowy motyw ze świetlistymi elementami.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>300 pkt</span>
+              <button onclick="buyItem('theme-neon', 300, 'theme')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition">Odblokuj</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">🏺</span>
+                <span class="text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-lg">Awatary</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Awatar: Szklana Amfora</h3>
+              <p class="text-xs text-gray-300 mt-1">Niestandardowa ikona profilowa przedstawiająca klasyczne szkło.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>100 pkt</span>
+              <button onclick="buyItem('🏺', 100, 'avatar')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition">Odblokuj</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">🧪</span>
+                <span class="text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded-lg">Awatary</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Awatar: Eko-Fiolka</h3>
+              <p class="text-xs text-gray-300 mt-1">Ekskluzywny avatar dla badaczy i pasjonatów ekologii.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>200 pkt</span>
+              <button onclick="buyItem('🧪', 200, 'avatar')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">Odblokuj</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">☕</span>
+                <span class="text-xs font-extrabold bg-green-500/20 text-green-300 border border-green-500/30 px-2 py-1 rounded-lg">Kupon</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Kawiarnia Eko-Kawa Bonus</h3>
+              <p class="text-xs text-gray-300 mt-1">Kupon zniżkowy na kawę w szklanej własnej lub wielorazowej szklance.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>400 pkt</span>
+              <button onclick="buyVoucher('Kawiarnia Eko-Kawa Bonus', 400)" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">Kup Kupon</button>
+            </div>
+          </div>
+
+          <div class="glass-card p-4 flex flex-col justify-between glass-card-hover transition">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-3xl">🛒</span>
+                <span class="text-xs font-extrabold bg-green-500/20 text-green-300 border border-green-500/30 px-2 py-1 rounded-lg">Kupon</span>
+              </div>
+              <h3 class="font-bold text-white text-sm">Lokalny Warzywniak Bonus</h3>
+              <p class="text-xs text-gray-300 mt-1">Voucher na zakupy produktów w opakowaniach zwrotnych.</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+              <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-coins mr-1"></i>500 pkt</span>
+              <button onclick="buyVoucher('Lokalny Warzywniak Bonus', 500)" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">Kup Kupon</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: QUIZ -->
+    <div id="view-quiz" class="hidden space-y-6">
+      <div class="glass-card p-6 max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fa-solid fa-brain text-purple-400 mr-2.5"></i>Quiz Ekologiczny: Recykling Szkła
+            </h2>
+            <p class="text-xs text-gray-300 mt-1">Sprawdź swoją wiedzę i zdobądź darmowe **pkt**!</p>
+          </div>
+          <div class="text-xs bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-bold">
+            +30 pkt / Pytanie
+          </div>
+        </div>
+
+        <div id="quizContainer"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: FORUM & COMMUNITY -->
+    <div id="view-forum" class="hidden space-y-6">
+      <div class="glass-card p-6">
+        <h2 class="text-xl font-bold text-white mb-1 flex items-center">
+          <i class="fa-solid fa-users text-pink-400 mr-2.5"></i>Forum Mieszkańców i Ekologia
+        </h2>
+        <p class="text-xs text-gray-300 mb-6">Podziel się zdjęciami zebranych szklanych opakowań, zadaj pytanie lub zgłoś lokalne punkty skupu.</p>
+
+        <div class="bg-black/30 p-4 rounded-xl border border-white/10 mb-8 space-y-3">
+          <textarea id="forumInputText" rows="3" placeholder="Napisz coś interesującego o recyklingu szkła lub podziel się pomysłem..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-400 transition placeholder-gray-500 resize-none"></textarea>
+          
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+              <label class="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-xs text-gray-300 flex items-center space-x-1.5 transition">
+                <i class="fa-solid fa-image text-emerald-400"></i>
+                <span id="imageFileName">Dodaj zdjęcie</span>
+                <input type="file" id="forumImageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+              </label>
+            </div>
+            
+            <button onclick="createForumPost()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-900/30 transition">
+              Opublikuj wpis
+            </button>
+          </div>
+        </div>
+
+        <div id="forumPostsList" class="space-y-4"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL PROFILE SETUP -->
+  <div id="profileModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card p-6 max-w-md w-full border border-white/20">
+      <h3 class="text-lg font-bold text-white mb-2">Ustawienia Profilu</h3>
+      <p class="text-xs text-gray-300 mb-4">Zmień swój nick lub dostosuj wygląd profilu.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">Twój Nick</label>
+          <input type="text" id="inputNick" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">Wybierz Awatar</label>
+          <div class="flex space-x-2" id="avatarSelector">
+            <button onclick="selectAvatar('🍾')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xl flex items-center justify-center">🍾</button>
+            <button onclick="selectAvatar('🫙')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xl flex items-center justify-center">🫙</button>
+            <button onclick="selectAvatar('🍷')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xl flex items-center justify-center">🍷</button>
+            <button onclick="selectAvatar('♻️')" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xl flex items-center justify-center">♻️</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end space-x-2">
+        <button onclick="closeProfileModal()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-semibold rounded-lg text-gray-300">Zamknij</button>
+        <button onclick="saveProfile()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-semibold rounded-lg text-white">Zapisz Zmiany</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="glass-card mx-2 mb-2 p-4 text-center text-xs text-emerald-200/60 mt-6">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>
+        <strong>GlassLoop Startup</strong> &copy; 2026 - Obieg Zamknięty Opakowań Szklanych
+      </div>
+      <div class="flex items-center space-x-4 text-[11px]">
+        <span class="hover:underline cursor-pointer"><i class="fa-solid fa-shield-halved mr-1"></i>Polityka Eko</span>
+        <span class="hover:underline cursor-pointer"><i class="fa-solid fa-city mr-1"></i>Partnerzy Miejscy</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- APPLICATION LOGIC (JS) -->
+  <script>
+    let currentUser = {
+      id: 'usr_' + Math.floor(Math.random() * 100000),
+      nick: 'EkoUżytkownik',
+      points: 0,
+      bottles: 0,
+      avatar: '🍾',
+      unlockedThemes: ['theme-default'],
+      unlockedAvatars: ['🍾', '🫙', '🍷', '♻️']
+    };
+
+    const bottleTypes = [
+      { name: "Zwrotna Butelka Piwna 500ml", points: 50, co2: 0.15, energy: 0.4 },
+      { name: "Słoik Przetworów Szklany 900ml", points: 60, co2: 0.22, energy: 0.6 },
+      { name: "Butelka Wina Szklana 750ml", points: 70, co2: 0.28, energy: 0.8 },
+      { name: "Butelka Mleko / Soki 1000ml", points: 50, co2: 0.18, energy: 0.5 }
+    ];
+
+    let realUsers = [];
+    let forumPosts = [];
+
+    const quizQuestions = [
+      {
+        q: "Ile razy szkło może być przetwarzane i przetapiane bez utraty jakości?",
+        options: ["Maksymalnie 5 razy", "Do 50 razy", "Nieskończenie wiele razy", "Tylko 1 raz"],
+        correct: 2
+      },
+      {
+        q: "Do jakiego koloru pojemnika wyrzucamy czyste opakowania szklane?",
+        options: ["Żółtego", "Zielonego", "Niebieskiego", "Czarnego"],
+        correct: 1
+      },
+      {
+        q: "Czy przed wyrzuceniem słoika szklanego należy go dokładnie umyć detergentami?",
+        options: ["Tak, musi być sterylnie czysty", "Nie, wystarczy go opróżnić z resztek", "Trzeba go wyparzyć", "Nie wolno myć wcale"],
+        correct: 1
+      }
+    ];
+
+    let selectedForumImage = null;
+
+    window.onload = function() {
+      loadUserData();
+      initCharts();
+      updateUserUI();
+      renderLeaderboard();
+      renderForum();
+      renderQuiz();
+      renderScanHistory();
+    };
+
+    function loadUserData() {
+      const saved = localStorage.getItem('glassloop_user');
+      if (saved) {
+        currentUser = JSON.parse(saved);
+      }
+      
+      const savedUsers = localStorage.getItem('glassloop_all_users');
+      if (savedUsers) {
+        realUsers = JSON.parse(savedUsers);
+      }
+
+      const savedPosts = localStorage.getItem('glassloop_forum_posts');
+      if (savedPosts) {
+        forumPosts = JSON.parse(savedPosts);
+      }
+    }
+
+    function saveUserData() {
+      localStorage.setItem('glassloop_user', JSON.stringify(currentUser));
+      
+      let uIdx = realUsers.findIndex(u => u.id === currentUser.id);
+      if (uIdx >= 0) {
+        realUsers[uIdx] = { ...currentUser };
+      } else {
+        realUsers.push({ ...currentUser });
+      }
+      localStorage.setItem('glassloop_all_users', JSON.stringify(realUsers));
+
+      updateUserUI();
+      renderLeaderboard();
+    }
+
+    function getBadge(points) {
+      if (points > 1200) return "Eko-Legenda Miasta";
+      if (points > 500) return "Mistrz Recyklingu";
+      if (points > 200) return "Pogromca Butelek";
+      return "Eko-Początkujący";
+    }
+
+    function updateUserUI() {
+      document.getElementById('displayNick').innerText = currentUser.nick;
+      document.getElementById('userPoints').innerText = currentUser.points;
+      document.getElementById('userBottles').innerText = currentUser.bottles;
+      document.getElementById('shopBalance').innerText = currentUser.points;
+      
+      const badge = getBadge(currentUser.points);
+      document.getElementById('userBadge').innerText = badge;
+
+      document.getElementById('userAvatarContainer').innerText = currentUser.avatar;
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['dashboard', 'scanner', 'leaderboard', 'shop', 'quiz', 'forum'];
+      tabs.forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/30', 'shadow-lg');
+        btn.classList.add('bg-white/5', 'text-gray-300', 'border-transparent');
+      });
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.remove('bg-white/5', 'text-gray-300', 'border-transparent');
+      activeBtn.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/30', 'shadow-lg');
+    }
+
+    function simulateScan() {
+      const bottle = bottleTypes[Math.floor(Math.random() * bottleTypes.length)];
+      currentUser.points += bottle.points;
+      currentUser.bottles += 1;
+      
+      saveUserData();
+
+      const history = document.getElementById('scanHistory');
+      const item = document.createElement('div');
+      item.className = "bg-black/30 p-3 rounded-xl border border-white/5 flex justify-between items-center animate-fade-in";
+      item.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <span class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></span>
+          <div>
+            <div class="font-bold text-white">${bottle.name}</div>
+            <div class="text-[10px] text-gray-400">+${bottle.co2}kg CO2 saved | +${bottle.energy} kWh</div>
+          </div>
+        </div>
+        <div class="text-right font-extrabold text-yellow-400">
+          +${bottle.points} pkt
+        </div>
+      `;
+      history.prepend(item);
+
+      alert(`🎉 Sukces! Zeskanowano: ${bottle.name}\nPrzyznano +${bottle.points} pkt!`);
+    }
+
+    function renderScanHistory() {
+      const history = document.getElementById('scanHistory');
+      history.innerHTML = `
+        <div class="bg-black/30 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></span>
+            <div>
+              <div class="font-bold text-white">Przykładowy Skup: Butelka Zwrotna 500ml</div>
+              <div class="text-[10px] text-gray-400">Zeskanowano pomyślnie</div>
+            </div>
+          </div>
+          <div class="text-right font-extrabold text-yellow-400">
+            +50 pkt
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeaderboard() {
+      let allUsers = [...realUsers];
+
+      const existingIdx = allUsers.findIndex(u => u.id === currentUser.id);
+      if (existingIdx >= 0) {
+        allUsers[existingIdx] = { ...currentUser };
+      } else {
+        allUsers.push({ ...currentUser });
+      }
+
+      allUsers.sort((a, b) => b.points - a.points);
+
+      document.getElementById('totalUsersCount').innerText = allUsers.length;
+
+      const tbody = document.getElementById('leaderboardTable');
+      tbody.innerHTML = '';
+
+      allUsers.forEach((usr, index) => {
+        const isMe = usr.id === currentUser.id;
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-white/5 ${isMe ? 'bg-emerald-500/20 font-bold' : 'hover:bg-white/5'}`;
+        
+        let rankMedal = `#${index + 1}`;
+        if (index === 0) rankMedal = '🥇';
+        if (index === 1) rankMedal = '🥈';
+        if (index === 2) rankMedal = '🥉';
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-extrabold text-sm text-yellow-400">${rankMedal}</td>
+          <td class="py-3 px-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-base">${usr.avatar || '🍾'}</span>
+              <span class="text-white">${usr.nick} ${isMe ? '<span class="text-[10px] text-emerald-400">(Ty)</span>' : ''}</span>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <span class="px-2 py-0.5 text-[10px] bg-white/10 text-emerald-200 rounded border border-white/10 font-medium">
+              ${getBadge(usr.points)}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-right text-gray-300 font-medium">${usr.bottles || 0} szt.</td>
+          <td class="py-3 px-3 text-right font-extrabold text-yellow-400">${usr.points || 0} pkt</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function buyItem(itemValue, cost, type) {
+      if (currentUser.points < cost) {
+        alert("❌ Masz za mało pkt na ten zakup!");
+        return;
+      }
+
+      if (type === 'theme') {
+        document.body.className = `${itemValue} text-gray-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white`;
+        currentUser.points -= cost;
+        saveUserData();
+        alert(`🎨 Odblokowano i aktywowano nowy motyw wyglądu!`);
+      } else if (type === 'avatar') {
+        currentUser.avatar = itemValue;
+        currentUser.points -= cost;
+        saveUserData();
+        alert(`🏺 Odblokowano i zmieniono Twój awatar na: ${itemValue}`);
+      }
+    }
+
+    function buyVoucher(voucherName, cost) {
+      if (currentUser.points < cost) {
+        alert("❌ Masz za mało pkt na zakup tego kuponu!");
+        return;
+      }
+
+      currentUser.points -= cost;
+      saveUserData();
+      alert(`🎁 Gratulacje! Zakupiono kupon: "${voucherName}". Kod kuponu aktywowany!`);
+    }
+
+    function renderQuiz() {
+      const container = document.getElementById('quizContainer');
+      container.innerHTML = '';
+
+      quizQuestions.forEach((item, qIdx) => {
+        const qBox = document.createElement('div');
+        qBox.className = "bg-black/30 p-4 rounded-xl border border-white/10 mb-4 space-y-3";
+        
+        let optionsHtml = '';
+        item.options.forEach((opt, oIdx) => {
+          optionsHtml += `
+            <button onclick="answerQuiz(${qIdx}, ${oIdx})" class="w-full text-left p-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-200 transition">
+              ${opt}
+            </button>
+          `;
+        });
+
+        qBox.innerHTML = `
+          <div class="font-bold text-sm text-white">${qIdx + 1}. ${item.q}</div>
+          <div class="space-y-2 mt-2">${optionsHtml}</div>
+        `;
+        container.appendChild(qBox);
+      });
+    }
+
+    function answerQuiz(qIdx, selectedOption) {
+      const question = quizQuestions[qIdx];
+      if (selectedOption === question.correct) {
+        currentUser.points += 30;
+        saveUserData();
+        alert("Prawidłowa odpowiedź! 🌟 +30 pkt trafiło do Twojego konta.");
+      } else {
+        alert("❌ Niestety niepoprawna odpowiedź. Spróbuj ponowne innym razem!");
+      }
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          selectedForumImage = e.target.result;
+          document.getElementById('imageFileName').innerText = "Zdjęcie wybrane ✓";
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function createForumPost() {
+      const textInput = document.getElementById('forumInputText');
+      const text = textInput.value.trim();
+
+      if (!text) {
+        alert("Wpisz treść postu!");
+        return;
+      }
+
+      const newPost = {
+        id: Date.now(),
+        author: currentUser.nick,
+        avatar: currentUser.avatar,
+        text: text,
+        image: selectedForumImage,
+        likes: 0,
+        time: "Przed chwilą"
+      };
+
+      forumPosts.unshift(newPost);
+      localStorage.setItem('glassloop_forum_posts', JSON.stringify(forumPosts));
+
+      textInput.value = '';
+      selectedForumImage = null;
+      document.getElementById('imageFileName').innerText = "Dodaj zdjęcie";
+
+      renderForum();
+    }
+
+    function renderForum() {
+      const container = document.getElementById('forumPostsList');
+      container.innerHTML = '';
+
+      if (forumPosts.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-xs text-gray-400 bg-black/20 rounded-xl border border-white/5">
+            Brak wpisów na forum. Bądź pierwszą osobą, która doda post!
+          </div>
+        `;
+        return;
+      }
+
+      forumPosts.forEach(post => {
+        const postCard = document.createElement('div');
+        postCard.className = "bg-black/30 p-4 rounded-xl border border-white/10 space-y-3";
+
+        let imgHtml = post.image ? `<img src="${post.image}" class="w-full max-h-60 object-cover rounded-xl mt-2 border border-white/10">` : '';
+
+        postCard.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">${post.avatar || '🍾'}</span>
+              <div>
+                <div class="font-bold text-xs text-white">${post.author}</div>
+                <div class="text-[10px] text-gray-400">${post.time}</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-emerald-400 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">Uczestnik Obiegu</span>
+          </div>
+
+          <p class="text-xs text-gray-200 leading-relaxed">${post.text}</p>
+          ${imgHtml}
+
+          <div class="pt-2 flex items-center space-x-4 text-xs text-gray-400 border-t border-white/5">
+            <button onclick="likePost(${post.id})" class="hover:text-pink-400 flex items-center space-x-1 transition">
+              <i class="fa-solid fa-heart text-pink-500/80"></i>
+              <span>${post.likes} Polubień</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(postCard);
+      });
+    }
+
+    function likePost(id) {
+      const post = forumPosts.find(p => p.id === id);
+      if (post) {
+        post.likes += 1;
+        localStorage.setItem('glassloop_forum_posts', JSON.stringify(forumPosts));
+        renderForum();
+      }
+    }
+
+    function openProfileModal() {
+      document.getElementById('inputNick').value = currentUser.nick;
+      document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.add('hidden');
+    }
+
+    function selectAvatar(emoji) {
+      currentUser.avatar = emoji;
+    }
+
+    function saveProfile() {
+      const newNick = document.getElementById('inputNick').value.trim();
+      if (newNick) {
+        currentUser.nick = newNick;
+        saveUserData();
+        closeProfileModal();
+      }
+    }
+
+    function initCharts() {
+      const ctxLine = document.getElementById('recycledChart').getContext('2d');
+      new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze'],
+          datasets: [{
+            label: 'Liczba zebranych butelek (tys.)',
+            data: [2.1, 3.4, 4.8, 6.2, 9.1, 14.2],
+            borderColor: '#34d399',
+            backgroundColor: 'rgba(52, 211, 153, 0.15)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#e5e7eb', font: { size: 11 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+
+      const ctxPie = document.getElementById('typesChart').getContext('2d');
+      new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['Butelki Zwrotne (Napoje)', 'Słoiki Przetworów', 'Butelki Wina/Soków', 'Szkło Inne'],
+          datasets: [{
+            data: [55, 25, 15, 5],
+            backgroundColor: ['#34d399', '#2dd4bf', '#06b6d4', '#64748b'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#e5e7eb', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
